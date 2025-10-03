@@ -1,22 +1,24 @@
 add_library(LibGPU STATIC)
 
-
+file(GLOB LIBGPU_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
 if(GRAPHICS_API STREQUAL "Vulkan")
-    list(APPEND LIBGPU_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/VulkanContext.h)
-    list(APPEND LIBGPU_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/VulkanContext.cpp)
-    source_group("Vulkan" FILES ${LIBGPU_HEADERS} ${LIBGPU_SOURCES})
+    file(GLOB LIBGPU_HEADERS_PLATFORM ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/*.h)
+    file(GLOB LIBGPU_SOURCES_PLATFORM ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/*.cpp)
+    source_group("Vulkan" FILES ${LIBGPU_HEADERS_PLATFORM} ${LIBGPU_SOURCES_PLATFORM})
+
+    set(LIBGPU_SDK_HEADERS_PATH "$ENV{VULKAN_SDK}/Include")
+    set(LIBGPU_SDK_LIBS_PATH "$ENV{VULKAN_SDK}/Lib")
+    if(NOT EXISTS "${LIBGPU_SDK_HEADERS_PATH}/vulkan/vulkan.h")
+        message(FATAL_ERROR "Vulkan SDK not found (VULKAN_SDK environment variable not set).")
+    endif()
+
 elseif(GRAPHICS_API STREQUAL "DX12")
-    list(APPEND LIBGPU_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/dx12/DX12Context.h)
-    list(APPEND LIBGPU_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dx12/DX12Context.cpp)
-    source_group("DX12" FILES ${LIBGPU_HEADERS} ${LIBGPU_SOURCES})
+    file(GLOB LIBGPU_HEADERS_PLATFORM ${CMAKE_CURRENT_SOURCE_DIR}/dx12/*.h)
+    file(GLOB LIBGPU_SOURCES_PLATFORM ${CMAKE_CURRENT_SOURCE_DIR}/dx12/*.cpp)
+    source_group("DX12" FILES ${LIBGPU_HEADERS_PLATFORM} ${LIBGPU_SOURCES_PLATFORM})
 endif()
 
-list(APPEND LIBGPU_HEADERS 
-    Context.h
-    IndexBuffer.h
-    TextureBuffer.h
-    VertexBuffer.h)
-
-target_sources(LibGPU PRIVATE ${LIBGPU_HEADERS} ${LIBGPU_SOURCES})
-target_include_directories(LibGPU PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_sources(LibGPU PRIVATE ${LIBGPU_HEADERS} ${LIBGPU_HEADERS_PLATFORM} ${LIBGPU_SOURCES_PLATFORM})
+target_include_directories(LibGPU PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBGPU_SDK_HEADERS_PATH})
+target_link_libraries(LibGPU PRIVATE "${LIBGPU_SDK_LIBS_PATH}/vulkan-1.lib")
