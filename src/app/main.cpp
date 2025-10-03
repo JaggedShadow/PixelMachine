@@ -1,11 +1,11 @@
-#include <iostream>
-#include <gpu/Context.h>
+#include <gpu/RenderContext.h>
 
 int main() {
+    
+    PixelMachine::GPU::RenderContext::Allocate();
+    auto renderContextP = PixelMachine::GPU::RenderContext::Get();
+    renderContextP->BeginFrame("");
+    PixelMachine::GPU::RenderContext::Deallocate();
 
-    PixelMachine::GPU::Context* pContext = PixelMachine::GPU::Context::Get(nullptr);
-    std::cout << pContext->GetInfo();
-
-    std::cin.get();
     return 0;
 }
