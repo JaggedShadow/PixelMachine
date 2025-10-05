@@ -3,21 +3,21 @@
 namespace PixelMachine {
 	namespace GPU {
 		
-		static VlkRenderContext *g_vlkRenderContextP;
+		static VlkRenderContext *s_vlkRenderContextP;
 
-		void RenderContext::Allocate() {
-			if (g_vlkRenderContextP == nullptr) {
-				g_vlkRenderContextP = new VlkRenderContext();
+		void RenderContext::Initialize() {
+			if (s_vlkRenderContextP == nullptr) {
+				s_vlkRenderContextP = new VlkRenderContext();
 			}
 		}
 
 		RenderContext *RenderContext::Get() {
-			return g_vlkRenderContextP;
+			return s_vlkRenderContextP;
 		}
 
-		void RenderContext::Deallocate() {
-			if (g_vlkRenderContextP) {
-				delete g_vlkRenderContextP;
+		void RenderContext::Destroy() {
+			if (s_vlkRenderContextP) {
+				delete s_vlkRenderContextP;
 			}
 		}
 

@@ -8,16 +8,16 @@ namespace PixelMachine {
 		class VlkRenderContext : public RenderContext {
 		public:
 			VlkRenderContext() {};
-			void BeginFrame(const char* name) override {};
-			void BindShader(const Shader& shader) override {};
-			void BindVertexBuffer(const VertexBuffer& vbo) override {};
-			void BindIndexBuffer(const IndexBuffer& ibo) override {};
-			void BindUniformBuffer(const UniformBuffer& ubo) override {};
+			void BeginFrame(const char *name) override {};
+			void BindShader(const Shader &shader) override {};
+			void BindVertexBuffer(const VertexBuffer &vbo) override {};
+			void BindIndexBuffer(const IndexBuffer &ibo) override {};
+			void BindUniformBuffer(const UniformBuffer &ubo) override {};
 			void SetPrimitiveType(const int type) override {};
 			void SetLineWidth(const float width) override {};
 			void SetMultisampling(const int sampleCount) override {};
-			void SetRenderTarget(void* windowHandle) override {};
-			void SetRenderTarget(const TextureBuffer& texture) override {};
+			void SetRenderTarget(void *windowHandle) override {};
+			void SetRenderTarget(const TextureBuffer &texture) override {};
 			void SetDepthTesting(const bool enabled) override {};
 			void SetClearColor(const float rgb[3]) override {};
 			void SetViewport(const int xywh[4]) override {};
@@ -30,7 +30,3 @@ namespace PixelMachine {
 }
 
 #endif // !VLK_RENDER_CONTEXT_H_
-
-
-
-

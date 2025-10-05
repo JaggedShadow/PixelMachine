@@ -12,9 +12,9 @@ namespace PixelMachine {
 
 		class RenderContext {
 		public:
-			static void Allocate();
+			static void Initialize();
 			static RenderContext *Get();
-			static void Deallocate();
+			static void Destroy();
 
 			virtual void BeginFrame(const char* name) = 0;
 			virtual void BindShader(const Shader& shader) = 0;
