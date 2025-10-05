@@ -5,9 +5,11 @@
 
 namespace PixelMachine {
 	namespace GPU {
+		class VlkDevice;
 		class VlkRenderContext : public RenderContext {
 		public:
-			VlkRenderContext() {};
+			VlkRenderContext();
+			~VlkRenderContext();
 			void BeginFrame(const char *name) override {};
 			void BindShader(const Shader &shader) override {};
 			void BindVertexBuffer(const VertexBuffer &vbo) override {};
@@ -23,8 +25,10 @@ namespace PixelMachine {
 			void SetViewport(const int xywh[4]) override {};
 			void Draw() override {};
 			void PresentFrame() override {};
-			~VlkRenderContext() {};
+			static VlkDevice &GetVlkDevice();
+
 		private:
+			static VlkDevice *sm_vlkDeviceP;
 		};
 	}
 }

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(GRAPHICS_API "Vulkan" CACHE STRING "Select graphics API for a renderer")
 set_property(CACHE GRAPHICS_API PROPERTY STRINGS "Vulkan" "DX12")
+option(VULKAN_ENABLE_VALIDATION ON)
 
 project(PixelMachine)
 
