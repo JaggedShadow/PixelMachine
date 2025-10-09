@@ -1,11 +1,14 @@
 #include <gpu/RenderContext.h>
 
+namespace PXMGPU = PixelMachine::GPU;
+
 int main() {
     
-    PixelMachine::GPU::RenderContext::Initialize();
-    auto renderContextP = PixelMachine::GPU::RenderContext::Get();
+    PXMGPU::RenderContext::Initialize();
+    auto renderContextP = PXMGPU::RenderContext::Get();
     renderContextP->BeginFrame("");
-    PixelMachine::GPU::RenderContext::Destroy();
+
+    PXMGPU::RenderContext::Destroy();
 
     return 0;
 }

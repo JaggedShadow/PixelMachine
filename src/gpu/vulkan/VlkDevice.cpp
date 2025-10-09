@@ -1,4 +1,5 @@
 #include <vulkan/VlkDevice.h>
+
 #include <stdexcept>
 
 static VkInstance CreateVkInstance() {
@@ -32,8 +33,38 @@ static VkInstance CreateVkInstance() {
 	return result;
 }
 
+static VkDevice CreateVkDevice(VkPhysicalDevice physicalDevice, const uint32_t qfIndex) {
+
+	VkDeviceQueueCreateInfo queueInfo = {};
+	queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.queueFamilyIndex = qfIndex;
+	queueInfo.queueCount = 1u;
+	float priority = 1.f;
+	queueInfo.pQueuePriorities = &priority;
+
+	VkDeviceCreateInfo deviceInfo = {};
+	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pQueueCreateInfos = &queueInfo;
+	deviceInfo.queueCreateInfoCount = 1;
+
+	VkPhysicalDeviceFeatures features = {};
+	deviceInfo.pEnabledFeatures = &features;
+
+	const char *extensions = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+	deviceInfo.ppEnabledExtensionNames = &extensions;
+
+	deviceInfo.enabledExtensionCount = 1;
+
+	VkDevice vkDevice = VK_NULL_HANDLE;
+	vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &vkDevice);
+
+	return vkDevice;
+}
+
 PixelMachine::GPU::VlkDevice::VlkDevice() {
+
 	m_vkInstance = CreateVkInstance();
+
 	if (m_vkInstance == VK_NULL_HANDLE) {
 		throw std::runtime_error("VlkDevice constructor failed - unable to create VkInstance.");
 	}
@@ -45,39 +76,48 @@ PixelMachine::GPU::VlkDevice::VlkDevice() {
 		throw std::runtime_error("VlkDevice constructor failed - No GPUs detected.");
 	}
 
-	m_vkPhysicalDevices.resize(physicalDevicesCount);
-	vkEnumeratePhysicalDevices(m_vkInstance, &physicalDevicesCount, m_vkPhysicalDevices.data());
+	std::vector<VkPhysicalDevice> vkPhysicalDevices;
 
-	auto qfIndex = GetQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT, QFExtraFlags::WIN32_PRESENTATION);
+	vkPhysicalDevices.resize(physicalDevicesCount);
+	vkEnumeratePhysicalDevices(m_vkInstance, &physicalDevicesCount, vkPhysicalDevices.data());
 
-	if (!qfIndex.has_value()) {
-		throw std::runtime_error("VlkDevice constructor failed - Required VkQueue family not found.");
+	for (auto &pd : vkPhysicalDevices) {
+		m_vlkAdapters.push_back(VlkAdapter(pd));
 	}
 }
 
 PixelMachine::GPU::VlkDevice::~VlkDevice() {
+
+	if (m_vkLogicalDevice) {
+		vkDestroyDevice(m_vkLogicalDevice, nullptr);
+	}
+
 	if (m_vkInstance) {
 		vkDestroyInstance(m_vkInstance, nullptr);
 	}
 }
 
-std::optional<uint32_t> PixelMachine::GPU::VlkDevice::GetQueueFamilyIndex(VkQueueFlags queueFlags, QFExtraFlags extraFlags) {
+std::optional<uint32_t> PixelMachine::GPU::VlkDevice::GetQueueFamilyIndex(const uint32_t adapterIndex, VkQueueFlags queueFlags, QFExtraFlags extraFlags) {
+	
+	if (adapterIndex < 0 || adapterIndex >= m_vlkAdapters.size()) {
+		return std::nullopt;
+	}
 
 	uint32_t familiesCount = 0u;
-	vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevices[m_deviceIndex], &familiesCount, nullptr);
+	vkGetPhysicalDeviceQueueFamilyProperties(m_vlkAdapters[adapterIndex].GetHandle(), &familiesCount, nullptr);
 
 	if (!familiesCount) {
 		return std::nullopt;
 	}
 
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties(familiesCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevices[m_deviceIndex], &familiesCount, queueFamilyProperties.data());
+	vkGetPhysicalDeviceQueueFamilyProperties(m_vlkAdapters[adapterIndex].GetHandle(), &familiesCount, queueFamilyProperties.data());
 
 	uint32_t i = 0;
 	for (auto &properties : queueFamilyProperties) {
 		if (properties.queueFlags & queueFlags) {
 			if (extraFlags & QFExtraFlags::WIN32_PRESENTATION) {
-				if (!vkGetPhysicalDeviceWin32PresentationSupportKHR(m_vkPhysicalDevices[m_deviceIndex], i)) {
+				if (!vkGetPhysicalDeviceWin32PresentationSupportKHR(m_vlkAdapters[adapterIndex].GetHandle(), i)) {
 					return std::nullopt;
 				}
 			}
@@ -87,4 +127,54 @@ std::optional<uint32_t> PixelMachine::GPU::VlkDevice::GetQueueFamilyIndex(VkQueu
 	}
 
 	return std::nullopt;
+}
+
+bool PixelMachine::GPU::VlkDevice::SetAdapter(const uint32_t index) {
+
+	if (index < 0 || index >= m_vlkAdapters.size()) {
+		return false;
+	}
+
+	auto qfIndex = GetQueueFamilyIndex(index ,VK_QUEUE_GRAPHICS_BIT, QFExtraFlags::WIN32_PRESENTATION);
+
+	if (!qfIndex.has_value()) {
+		return false;
+	}
+
+	VkDevice newLogicalDevice = VK_NULL_HANDLE;
+	newLogicalDevice = CreateVkDevice(GetAdapter(index).GetHandle(), qfIndex.value());
+
+	if (!newLogicalDevice) {
+		return false;
+	}
+
+	if (m_vkLogicalDevice) {
+		vkDestroyDevice(m_vkLogicalDevice, nullptr);
+	}
+
+	m_activeAdapterIndex = index;
+	m_vkLogicalDevice = newLogicalDevice;
+	m_vkGPQueue.second = qfIndex.value();
+	vkGetDeviceQueue(m_vkLogicalDevice, qfIndex.value(), 0, &(m_vkGPQueue.first));
+	
+	return true;
+}
+
+uint32_t PixelMachine::GPU::VlkDevice::GetAdapterCount() const {
+	return m_vlkAdapters.size();
+}
+
+PixelMachine::GPU::VlkAdapter PixelMachine::GPU::VlkDevice::GetActiveAdapter() const {
+	return m_vlkAdapters[m_activeAdapterIndex];
+}
+
+PixelMachine::GPU::VlkAdapter PixelMachine::GPU::VlkDevice::GetAdapter(const uint32_t index) const {
+	if (index < 0 || index >= m_vlkAdapters.size()) {
+		throw new std::runtime_error("VlkAdapter access fail - index out of range.");
+	}
+	return m_vlkAdapters[index];
+}
+
+VkDevice PixelMachine::GPU::VlkDevice::GetHandle() const {
+	return m_vkLogicalDevice;
 }

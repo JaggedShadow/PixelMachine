@@ -25,7 +25,7 @@ namespace PixelMachine {
 			void SetViewport(const int xywh[4]) override {};
 			void Draw() override {};
 			void PresentFrame() override {};
-			static VlkDevice &GetVlkDevice();
+			static VlkDevice &GetVlkDevice(); // Reference getter added just for style (avoid access via public pointer)
 
 		private:
 			static VlkDevice *sm_vlkDeviceP;

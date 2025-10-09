@@ -10,14 +10,14 @@ namespace PixelMachine {
 		VlkDevice *VlkRenderContext::sm_vlkDeviceP = nullptr;
 
 		void RenderContext::Initialize() {
-			if (s_vlkRenderContextP == nullptr) {
+			if (!s_vlkRenderContextP) {
 				s_vlkRenderContextP = new VlkRenderContext();
 			}
 		}
 
 		RenderContext *RenderContext::Get() {
-			if (s_vlkRenderContextP == nullptr) {
-				throw std::runtime_error("RenderContext not initialized.");
+			if (!s_vlkRenderContextP) {
+				throw new std::runtime_error("VlkRenderContext access fail - not initialized.");
 			}
 			return s_vlkRenderContextP;
 		}
@@ -29,19 +29,26 @@ namespace PixelMachine {
 		}
 
 		VlkRenderContext::VlkRenderContext() {
-			if (sm_vlkDeviceP == nullptr) {
+			if (!sm_vlkDeviceP) {
 				sm_vlkDeviceP = new VlkDevice();
+				if (!sm_vlkDeviceP->SetAdapter(0)) {
+					throw new std::runtime_error("VlkAdapter setup fail.");
+				}
 			}
 		}
 
 		VlkRenderContext::~VlkRenderContext() {
-			delete sm_vlkDeviceP;
-			sm_vlkDeviceP = nullptr;
+			if (sm_vlkDeviceP) {
+				delete sm_vlkDeviceP;
+				sm_vlkDeviceP = nullptr;
+			}
 		}
 
 		VlkDevice &VlkRenderContext::GetVlkDevice() {
+			if (!sm_vlkDeviceP) {
+				throw new std::runtime_error("VlkDevice access failed - not initialized.");
+			}
 			return *sm_vlkDeviceP;
 		}
-
 	}
 }
