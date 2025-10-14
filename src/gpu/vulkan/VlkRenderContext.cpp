@@ -9,9 +9,9 @@ namespace PixelMachine {
 		static VlkRenderContext *s_vlkRenderContextP;
 		VlkDevice *VlkRenderContext::sm_vlkDeviceP = nullptr;
 
-		void RenderContext::Initialize() {
+		void RenderContext::Initialize(void *windowHandle) {
 			if (!s_vlkRenderContextP) {
-				s_vlkRenderContextP = new VlkRenderContext();
+				s_vlkRenderContextP = new VlkRenderContext(static_cast<HWND>(windowHandle));
 			}
 		}
 
@@ -28,11 +28,27 @@ namespace PixelMachine {
 			}
 		}
 
-		VlkRenderContext::VlkRenderContext() {
+		VlkRenderContext::VlkRenderContext(HWND windowHandle) {
+
 			if (!sm_vlkDeviceP) {
 				sm_vlkDeviceP = new VlkDevice();
-				if (!sm_vlkDeviceP->SetAdapter(0)) {
-					throw new std::runtime_error("VlkAdapter setup fail.");
+			}
+
+			m_vkSurface = sm_vlkDeviceP->CreateWindowSurface(windowHandle);
+
+			if (!m_vkSurface) {
+				throw new std::runtime_error("VlkRenderContext init fail - cannot create VkSurface.");
+			}
+
+			m_vkSurfaceFormat.format = VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
+			m_vkSurfaceFormat.colorSpace = VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+			for (uint32_t i = 0; i < sm_vlkDeviceP->GetAdapterCount(); i++) {
+				VlkAdapter adapter = sm_vlkDeviceP->GetAdapter(i);
+				if (adapter.SurfaceFormatAvailable(m_vkSurface, m_vkSurfaceFormat) &&
+					adapter.PresentModeAvailable(m_vkSurface, VK_PRESENT_MODE_FIFO_KHR)) {
+					sm_vlkDeviceP->SetAdapter(i);
+					break;
 				}
 			}
 		}

@@ -4,9 +4,9 @@ namespace PXMGPU = PixelMachine::GPU;
 
 int main() {
     
-    PXMGPU::RenderContext::Initialize();
+    PXMGPU::RenderContext::Initialize(nullptr);
     auto renderContextP = PXMGPU::RenderContext::Get();
-    renderContextP->BeginFrame("");
+    renderContextP->BeginPass("");
 
     PXMGPU::RenderContext::Destroy();
 

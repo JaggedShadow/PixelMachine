@@ -3,14 +3,18 @@
 
 #include <RenderContext.h>
 
+#include <vulkan/vulkan.h>
+#include <string>
+#include <vector>
+
 namespace PixelMachine {
 	namespace GPU {
 		class VlkDevice;
 		class VlkRenderContext : public RenderContext {
 		public:
-			VlkRenderContext();
+			VlkRenderContext(HWND windowHandle);
 			~VlkRenderContext();
-			void BeginFrame(const char *name) override {};
+			void BeginPass(const char *name) override {};
 			void BindShader(const Shader &shader) override {};
 			void BindVertexBuffer(const VertexBuffer &vbo) override {};
 			void BindIndexBuffer(const IndexBuffer &ibo) override {};
@@ -18,17 +22,21 @@ namespace PixelMachine {
 			void SetPrimitiveType(const int type) override {};
 			void SetLineWidth(const float width) override {};
 			void SetMultisampling(const int sampleCount) override {};
-			void SetRenderTarget(void *windowHandle) override {};
 			void SetRenderTarget(const TextureBuffer &texture) override {};
 			void SetDepthTesting(const bool enabled) override {};
 			void SetClearColor(const float rgb[3]) override {};
 			void SetViewport(const int xywh[4]) override {};
 			void Draw() override {};
 			void PresentFrame() override {};
+			void EndPass() override {};
 			static VlkDevice &GetVlkDevice(); // Reference getter added just for style (avoid access via public pointer)
 
 		private:
 			static VlkDevice *sm_vlkDeviceP;
+			VkSurfaceKHR m_vkSurface = VK_NULL_HANDLE;
+			VkSurfaceFormatKHR m_vkSurfaceFormat;
+			VkSwapchainKHR m_vkSwapchain = VK_NULL_HANDLE;
+
 		};
 	}
 }
