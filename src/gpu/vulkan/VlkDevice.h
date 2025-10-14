@@ -27,6 +27,7 @@ namespace PixelMachine {
 			VlkAdapter GetActiveAdapter() const;
 			uint32_t GetAdapterCount() const;
 			VkDevice GetHandle() const;
+			VkSurfaceKHR CreateWindowSurface(HWND windowHandle);
 
 		private:
 			VkInstance m_vkInstance = VK_NULL_HANDLE;
