@@ -78,11 +78,11 @@ namespace PixelMachine {
 			}
 		}
 
-		VlkDevice &VlkRenderContext::GetVlkDevice() {
+		VlkDevice *VlkRenderContext::GetVlkDevice() {
 			if (!sm_vlkDeviceP) {
 				throw new std::runtime_error("VlkDevice access failed - not initialized.");
 			}
-			return *sm_vlkDeviceP;
+			return sm_vlkDeviceP;
 		}
 	}
 }

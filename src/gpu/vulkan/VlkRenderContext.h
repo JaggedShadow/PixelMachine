@@ -29,7 +29,7 @@ namespace PixelMachine {
 			void Draw() override {};
 			void PresentFrame() override {};
 			void EndPass() override {};
-			static VlkDevice &GetVlkDevice(); // Reference getter added just for style (avoid access via public pointer)
+			static VlkDevice *GetVlkDevice();
 
 		private:
 			static VlkDevice *sm_vlkDeviceP;
