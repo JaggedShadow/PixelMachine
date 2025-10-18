@@ -179,21 +179,6 @@ VkDevice PixelMachine::GPU::VlkDevice::GetHandle() const {
 	return m_vkLogicalDevice;
 }
 
-VkSurfaceKHR PixelMachine::GPU::VlkDevice::CreateWindowSurface(HWND windowHandle) {
-	
-	VkSurfaceKHR result = VK_NULL_HANDLE;
-
-	if (!windowHandle) {
-		return result;
-	}
-
-	VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
-	surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	surfaceInfo.pNext = nullptr;
-	surfaceInfo.hinstance = GetModuleHandle(NULL);
-	surfaceInfo.hwnd = windowHandle;
-
-	vkCreateWin32SurfaceKHR(m_vkInstance, &surfaceInfo, nullptr, &result);
-
-	return result;
+VkInstance PixelMachine::GPU::VlkDevice::GetVkInstance() const {
+	return m_vkInstance;
 }
