@@ -59,12 +59,12 @@ static VkSwapchainKHR CreateVkSwapchain(VkSurfaceKHR surface, VkSurfaceFormatKHR
 	swapchainInfo.surface = surface;
 
 	PixelMachine::GPU::VlkDevice *device = PixelMachine::GPU::VlkRenderContext::GetVlkDevice();
-	VkSurfaceCapabilitiesKHR capabilities = device->GetActiveAdapter().GetSurfaceInfo(surface);
+	VkSurfaceCapabilitiesKHR caps = device->GetActiveAdapter().GetSurfaceInfo(surface);
 
-	swapchainInfo.minImageCount = capabilities.minImageCount + 1;
-	swapchainInfo.imageArrayLayers = capabilities.maxImageArrayLayers;
-	swapchainInfo.imageExtent.width = capabilities.currentExtent.width;
-	swapchainInfo.imageExtent.height = capabilities.currentExtent.height;
+	swapchainInfo.minImageCount = caps.minImageCount + 1;
+	swapchainInfo.imageArrayLayers = caps.maxImageArrayLayers;
+	swapchainInfo.imageExtent.width = caps.currentExtent.width;
+	swapchainInfo.imageExtent.height = caps.currentExtent.height;
 
 	swapchainInfo.imageFormat = surfaceFormat.format;
 	swapchainInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -75,7 +75,7 @@ static VkSwapchainKHR CreateVkSwapchain(VkSurfaceKHR surface, VkSurfaceFormatKHR
 	swapchainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	swapchainInfo.queueFamilyIndexCount = 0;
 	swapchainInfo.pQueueFamilyIndices = nullptr;
-	swapchainInfo.preTransform = capabilities.currentTransform;
+	swapchainInfo.preTransform = caps.currentTransform;
 	swapchainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainInfo.clipped = VK_TRUE;
 	swapchainInfo.oldSwapchain = VK_NULL_HANDLE;
@@ -99,12 +99,72 @@ PixelMachine::GPU::VlkSwapchain::VlkSwapchain(VkSurfaceKHR surface, VkSurfaceFor
 		throw new std::runtime_error("VlkSwapchain constructor failed - unable to create a swapchain.");
 	}
 
+	VlkDevice *device = VlkRenderContext::GetVlkDevice();
+	
+	uint32_t imageCount = 0;
+	vkGetSwapchainImagesKHR(device->GetHandle(), m_vkSwapchain, &imageCount, nullptr);
+
+	std::vector<VkImage> swapchainImages(imageCount);
+	vkGetSwapchainImagesKHR(device->GetHandle(), m_vkSwapchain, &imageCount, swapchainImages.data());
+
+	VkImageViewCreateInfo imageViewInfo = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = m_vkSurfaceFormat.format,
+		.components = {VK_COMPONENT_SWIZZLE_IDENTITY},
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1}
+	};
+
+	m_frameViews.resize(swapchainImages.size());
+
+	for (uint32_t i = 0; i < m_frameViews.size(); i++) {
+		imageViewInfo.image = swapchainImages[i];
+		VkImageView frameView = VK_NULL_HANDLE;
+		vkCreateImageView(device->GetHandle(), &imageViewInfo, nullptr, &frameView);
+		m_frameViews[i] = frameView;
+	}
+
+	VkFramebufferCreateInfo framebufferInfo = {};
+	VkSurfaceCapabilitiesKHR caps = device->GetActiveAdapter().GetSurfaceInfo(surface);
+
+	framebufferInfo.width = caps.currentExtent.width;
+	framebufferInfo.height = caps.currentExtent.height;
+	framebufferInfo.layers = 1;
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.attachmentCount = 1;
+	framebufferInfo.renderPass = m_vkRenderPass;
+
+	m_framebuffers.resize(m_frameViews.size());
+
+	for (uint32_t i = 0; i < m_frameViews.size(); i++) {
+
+		VkImageView attachments[] = { m_frameViews[i] };
+		framebufferInfo.pAttachments = attachments;
+
+		VkFramebuffer framebuffer = VK_NULL_HANDLE;
+		vkCreateFramebuffer(device->GetHandle(), &framebufferInfo, nullptr, &framebuffer);
+
+		m_framebuffers[i] = framebuffer;
+	}
 
 }
 
 PixelMachine::GPU::VlkSwapchain::~VlkSwapchain() {
 
 	VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+	for (auto fb : m_framebuffers) {
+		vkDestroyFramebuffer(device, fb, nullptr);
+	}
+
+	for (auto view : m_frameViews) {
+		vkDestroyImageView(device, view, nullptr);
+	}
 
 	if (m_vkSwapchain) {
 		vkDestroySwapchainKHR(device, m_vkSwapchain, nullptr);
