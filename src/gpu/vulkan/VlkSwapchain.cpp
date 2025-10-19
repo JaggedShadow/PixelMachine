@@ -117,7 +117,8 @@ PixelMachine::GPU::VlkSwapchain::VlkSwapchain(VkSurfaceKHR surface, VkSurfaceFor
 			.baseMipLevel = 0,
 			.levelCount = 1,
 			.baseArrayLayer = 0,
-			.layerCount = 1}
+			.layerCount = 1
+		}
 	};
 
 	m_frameViews.resize(swapchainImages.size());
@@ -152,11 +153,18 @@ PixelMachine::GPU::VlkSwapchain::VlkSwapchain(VkSurfaceKHR surface, VkSurfaceFor
 		m_framebuffers[i] = framebuffer;
 	}
 
+	VkSemaphoreCreateInfo semaphoreInfo = {};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &m_vkImageAvailableSemaphore);
+
 }
 
 PixelMachine::GPU::VlkSwapchain::~VlkSwapchain() {
 
 	VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+	vkDestroySemaphore(device, m_vkImageAvailableSemaphore, nullptr);
 
 	for (auto fb : m_framebuffers) {
 		vkDestroyFramebuffer(device, fb, nullptr);
@@ -174,4 +182,16 @@ PixelMachine::GPU::VlkSwapchain::~VlkSwapchain() {
 		vkDestroyRenderPass(device, m_vkRenderPass, nullptr);
 	}
 
+}
+
+uint32_t PixelMachine::GPU::VlkSwapchain::GetImage(VkFramebuffer *outFramebuffer) const {
+
+	VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+	uint32_t index = 0u;
+	vkAcquireNextImageKHR(device, m_vkSwapchain, UINT64_MAX, m_vkImageAvailableSemaphore, NULL, &index);
+
+	*outFramebuffer = m_framebuffers[index];
+
+	return index;
 }
