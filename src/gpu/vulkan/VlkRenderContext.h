@@ -34,8 +34,8 @@ namespace PixelMachine {
 		private:
 			static VlkDevice *sm_vlkDeviceP;
 			VkSurfaceKHR m_vkSurface = VK_NULL_HANDLE;
-			VkSurfaceFormatKHR m_vkSurfaceFormat;
-			VkSwapchainKHR m_vkSwapchain = VK_NULL_HANDLE;
+			VkSurfaceFormatKHR m_vkSurfaceFormat = {};
+			VlkSwapchain *m_vlkSwapchainP = nullptr;
 
 		};
 	}

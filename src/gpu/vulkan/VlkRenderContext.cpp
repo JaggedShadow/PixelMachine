@@ -1,5 +1,6 @@
 #include <vulkan/VlkRenderContext.h>
 #include <vulkan/VlkDevice.h>
+#include <vulkan/VlkSwapchain.h>
 
 #include <stdexcept>
 
@@ -64,9 +65,15 @@ namespace PixelMachine {
 				throw new std::runtime_error("VlkRenderContext init fail - cannot find suitable physical device.");
 			}
 
+			m_vlkSwapchainP = new VlkSwapchain(m_vkSurface, m_vkSurfaceFormat, VK_PRESENT_MODE_FIFO_KHR);
+
 		}
 
 		VlkRenderContext::~VlkRenderContext() {
+
+			if (m_vlkSwapchainP) {
+				delete m_vlkSwapchainP;
+			}
 
 			if (m_vkSurface) {
 				vkDestroySurfaceKHR(sm_vlkDeviceP->GetVkInstance(), m_vkSurface, nullptr);
