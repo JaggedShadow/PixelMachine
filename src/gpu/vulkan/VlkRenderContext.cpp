@@ -7,27 +7,7 @@
 namespace PixelMachine {
 	namespace GPU {
 		
-		static VlkRenderContext *s_vlkRenderContextP;
-		VlkDevice *VlkRenderContext::sm_vlkDeviceP = nullptr;
-
-		void RenderContext::Initialize(void *windowHandle) {
-			if (!s_vlkRenderContextP) {
-				s_vlkRenderContextP = new VlkRenderContext(static_cast<HWND>(windowHandle));
-			}
-		}
-
-		RenderContext *RenderContext::Get() {
-			if (!s_vlkRenderContextP) {
-				throw new std::runtime_error("VlkRenderContext access fail - not initialized.");
-			}
-			return s_vlkRenderContextP;
-		}
-
-		void RenderContext::Destroy() {
-			if (s_vlkRenderContextP) {
-				delete s_vlkRenderContextP;
-			}
-		}
+		extern VlkRenderContext *s_vlkRenderContextP;
 
 		VlkRenderContext::VlkRenderContext(HWND windowHandle) {
 
@@ -85,11 +65,5 @@ namespace PixelMachine {
 			}
 		}
 
-		VlkDevice *VlkRenderContext::GetVlkDevice() {
-			if (!sm_vlkDeviceP) {
-				throw new std::runtime_error("VlkDevice access failed - not initialized.");
-			}
-			return sm_vlkDeviceP;
-		}
 	}
 }
