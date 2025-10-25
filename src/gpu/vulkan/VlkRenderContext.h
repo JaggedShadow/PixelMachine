@@ -10,23 +10,19 @@
 namespace PixelMachine {
 	namespace GPU {
 		class VlkDevice;
+		class VlkSwapchain;
 		class VlkRenderContext : public RenderContext {
 		public:
 			VlkRenderContext(HWND windowHandle);
 			~VlkRenderContext();
-			void BeginPass(const char *name) override {};
-			void BindShader(const Shader &shader) override {};
-			void BindVertexBuffer(const VertexBuffer &vbo) override {};
-			void BindIndexBuffer(const IndexBuffer &ibo) override {};
-			void BindUniformBuffer(const UniformBuffer &ubo) override {};
+			void BeginPass(const std::string name) override {};
 			void SetPrimitiveType(const int type) override {};
 			void SetLineWidth(const float width) override {};
 			void SetMultisampling(const int sampleCount) override {};
-			void SetRenderTarget(const TextureBuffer &texture) override {};
 			void SetDepthTesting(const bool enabled) override {};
 			void SetClearColor(const float rgb[3]) override {};
 			void SetViewport(const int xywh[4]) override {};
-			void Draw() override {};
+			void RunPass(const std::string name) override {};
 			void PresentFrame() override {};
 			void EndPass() override {};
 			static VlkDevice *GetVlkDevice();
