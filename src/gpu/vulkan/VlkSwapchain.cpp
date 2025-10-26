@@ -191,7 +191,9 @@ uint32_t PixelMachine::GPU::VlkSwapchain::GetImage(VkFramebuffer *outFramebuffer
 	uint32_t index = 0u;
 	vkAcquireNextImageKHR(device, m_vkSwapchain, UINT64_MAX, m_vkImageAvailableSemaphore, NULL, &index);
 
-	*outFramebuffer = m_framebuffers[index];
+	if (outFramebuffer) {
+		*outFramebuffer = m_framebuffers[index];
+	}
 
 	return index;
 }
