@@ -21,20 +21,20 @@ namespace PixelMachine {
 			surfaceInfo.hinstance = GetModuleHandle(NULL);
 			surfaceInfo.hwnd = windowHandle;
 
-			vkCreateWin32SurfaceKHR(sm_vlkDeviceP->GetVkInstance(), &surfaceInfo, nullptr, &m_vkSurface);
+			vkCreateWin32SurfaceKHR(sm_vlkDeviceP->GetVkInstance(), &surfaceInfo, nullptr, &m_vkWinSurface);
 
-			if (!m_vkSurface) {
+			if (!m_vkWinSurface) {
 				throw new std::runtime_error("VlkRenderContext init fail - cannot create VkSurface.");
 			}
 
-			m_vkSurfaceFormat.format = VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
-			m_vkSurfaceFormat.colorSpace = VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+			m_vkWinSurfaceFormat.format = VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
+			m_vkWinSurfaceFormat.colorSpace = VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
 			bool adapterNotFound = true;
 			for (uint32_t i = 0; i < sm_vlkDeviceP->GetAdapterCount(); i++) {
 				VlkAdapter adapter = sm_vlkDeviceP->GetAdapter(i);
-				if (adapter.SurfaceFormatAvailable(m_vkSurface, m_vkSurfaceFormat) &&
-					adapter.PresentModeAvailable(m_vkSurface, VK_PRESENT_MODE_FIFO_KHR)) {
+				if (adapter.SurfaceFormatAvailable(m_vkWinSurface, m_vkWinSurfaceFormat) &&
+					adapter.PresentModeAvailable(m_vkWinSurface, VK_PRESENT_MODE_FIFO_KHR)) {
 					sm_vlkDeviceP->SetAdapter(i);
 					adapterNotFound = false;
 					break;
@@ -45,7 +45,7 @@ namespace PixelMachine {
 				throw new std::runtime_error("VlkRenderContext init fail - cannot find suitable physical device.");
 			}
 
-			m_vlkSwapchainP = new VlkSwapchain(m_vkSurface, m_vkSurfaceFormat, VK_PRESENT_MODE_FIFO_KHR);
+			m_vlkSwapchainP = new VlkSwapchain(m_vkWinSurface, m_vkWinSurfaceFormat, VK_PRESENT_MODE_FIFO_KHR);
 
 		}
 
@@ -55,8 +55,8 @@ namespace PixelMachine {
 				delete m_vlkSwapchainP;
 			}
 
-			if (m_vkSurface) {
-				vkDestroySurfaceKHR(sm_vlkDeviceP->GetVkInstance(), m_vkSurface, nullptr);
+			if (m_vkWinSurface) {
+				vkDestroySurfaceKHR(sm_vlkDeviceP->GetVkInstance(), m_vkWinSurface, nullptr);
 			}
 
 			if (sm_vlkDeviceP) {
