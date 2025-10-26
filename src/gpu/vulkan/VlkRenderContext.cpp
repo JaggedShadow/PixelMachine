@@ -212,5 +212,35 @@ namespace PixelMachine {
 
 		}
 
+		void VlkRenderContext::BindShaderProgram(const VlkShaderProgram *shaderProgram) {
+
+			if (!shaderProgram || !m_vlkPasses.size()) {
+				return;
+			}
+
+			VkPipelineShaderStageCreateInfo shaderInfo = {};
+			shaderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderInfo.pName = "main";
+			shaderInfo.module = shaderProgram->GetHandle();
+
+			switch (shaderProgram->GetType())
+			{
+			case ShaderType::VertexShader:
+				shaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+				break;
+			case ShaderType::FragmentShader:
+				shaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+				break;
+			case ShaderType::ComputeShader:
+				shaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+				break;
+			default:
+				break;
+			}
+
+			VlkPass &newPass = *m_vlkPasses.rbegin();
+			newPass.m_shaderStagesInfo.push_back(shaderInfo);
+
+		}
 	}
 }

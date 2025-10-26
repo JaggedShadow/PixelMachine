@@ -8,7 +8,8 @@
 #include <vector>
 
 namespace PixelMachine {
-	namespace GPU {
+	namespace GPU {	
+		class VlkShaderProgram;
 		class VlkDevice;
 		class VlkSwapchain;
 		class VlkRenderContext : public RenderContext {
@@ -26,6 +27,8 @@ namespace PixelMachine {
 			void PresentFrame() override {};
 			void EndPass() override;
 			static VlkDevice *GetVlkDevice();
+
+			void BindShaderProgram(const VlkShaderProgram *shaderProgram);
 
 		private:
 

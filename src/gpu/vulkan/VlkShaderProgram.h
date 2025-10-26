@@ -44,26 +44,11 @@ namespace PixelMachine {
 				}
 			};
 
-			VkShaderModule GetVkShaderModule() const { return m_vkShaderModule; }
+			VkShaderModule GetHandle() const { return m_vkShaderModule; }
 
 			void Bind() const override {
-
 				VlkRenderContext *pVlkRenderContext = static_cast<VlkRenderContext*>(VlkRenderContext::Get());
-
-				switch (m_type)
-				{
-				case PixelMachine::GPU::VertexShader:
-					//pVlkRenderContext->BindVertexShader(m_vkShaderModule);
-					break;
-				case PixelMachine::GPU::FragmentShader:
-					//pVlkRenderContext->BindFragmentShader(m_vkShaderModule);
-					break;
-				case PixelMachine::GPU::ComputeShader:
-					//pVlkRenderContext->BindComputeShader(m_vkShaderModule);
-					break;
-				default:
-					break;
-				}
+				pVlkRenderContext->BindShaderProgram(this);
 			};
 
 		private:
