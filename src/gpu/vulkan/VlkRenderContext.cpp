@@ -1,6 +1,7 @@
 #include <vulkan/VlkRenderContext.h>
 #include <vulkan/VlkDevice.h>
 #include <vulkan/VlkSwapchain.h>
+#include <vulkan/VlkShaderProgram.h>
 
 #include <stdexcept>
 
@@ -51,6 +52,8 @@ namespace PixelMachine {
 
 		VlkRenderContext::~VlkRenderContext() {
 
+			m_vlkPasses.clear();
+
 			if (m_vlkSwapchainP) {
 				delete m_vlkSwapchainP;
 			}
@@ -63,6 +66,150 @@ namespace PixelMachine {
 				delete sm_vlkDeviceP;
 				sm_vlkDeviceP = nullptr;
 			}
+		}
+
+		void VlkRenderContext::EndPass() {
+
+			if (!m_vlkPasses.size())
+				return;
+
+			VlkPass &newPass = *m_vlkPasses.rbegin();
+
+			VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
+			vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			vertexInputStateInfo.vertexBindingDescriptionCount = 0;
+			vertexInputStateInfo.pVertexBindingDescriptions = nullptr;
+			vertexInputStateInfo.vertexAttributeDescriptionCount = 0;
+			vertexInputStateInfo.pVertexAttributeDescriptions = nullptr;
+	
+			VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
+			inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+			inputAssemblyInfo.topology = VkPrimitiveTopology(newPass.m_primitiveTopology);
+			inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+			VkViewport viewport = {};
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			if (newPass.m_renderToScreen) {
+
+				VlkAdapter adapter = VlkRenderContext::GetVlkDevice()->GetActiveAdapter();
+				VkSurfaceCapabilitiesKHR surfaceCaps = adapter.GetSurfaceInfo(m_vkWinSurface);
+
+				viewport.x = 0.0f;
+				viewport.y = 0.0f;
+				viewport.width = static_cast<float>(surfaceCaps.currentExtent.width);
+				viewport.height = static_cast<float>(surfaceCaps.currentExtent.height);
+			}
+			else {
+				viewport.x = newPass.m_viewportRect[0];
+				viewport.y = newPass.m_viewportRect[1];
+				viewport.width = newPass.m_viewportRect[2];
+				viewport.height = newPass.m_viewportRect[3];
+			}
+
+			
+			VkRect2D scissorRect = {}; // Render full viewport 
+			scissorRect.offset = { 0,0 };
+			scissorRect.extent.width = viewport.width;
+			scissorRect.extent.height = viewport.height;
+			
+
+			VkPipelineViewportStateCreateInfo viewportInfo = {};
+			viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+			viewportInfo.viewportCount = 1;
+			viewportInfo.pViewports = &viewport;
+			viewportInfo.scissorCount = 1;
+			viewportInfo.pScissors = &scissorRect;
+
+			VkPipelineRasterizationStateCreateInfo rasterInfo = {};
+			rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+			rasterInfo.depthClampEnable = VK_FALSE;
+			rasterInfo.rasterizerDiscardEnable = VK_FALSE;
+			rasterInfo.polygonMode = VK_POLYGON_MODE_FILL; // This should be set according to a primitive type
+			rasterInfo.lineWidth = newPass.m_lineWidth;
+			rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+			rasterInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+			rasterInfo.depthBiasEnable = VK_FALSE;
+			rasterInfo.depthBiasConstantFactor = 0.0f;
+			rasterInfo.depthBiasClamp = 0.0f;
+			rasterInfo.depthBiasSlopeFactor = 0.0f;
+
+			VkPipelineMultisampleStateCreateInfo multisamplingInfo = {};
+			multisamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+			multisamplingInfo.sampleShadingEnable = VK_FALSE;
+			multisamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			multisamplingInfo.minSampleShading = 1.0f;
+			multisamplingInfo.pSampleMask = nullptr;
+			multisamplingInfo.alphaToCoverageEnable = VK_FALSE;
+			multisamplingInfo.alphaToOneEnable = VK_FALSE;
+			
+			VkPipelineColorBlendAttachmentState colorBlendAttchState = {};
+			colorBlendAttchState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+				VK_COLOR_COMPONENT_G_BIT |
+				VK_COLOR_COMPONENT_B_BIT |
+				VK_COLOR_COMPONENT_A_BIT;
+			colorBlendAttchState.blendEnable = VK_FALSE;
+			colorBlendAttchState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttchState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+			colorBlendAttchState.colorBlendOp = VK_BLEND_OP_ADD;
+			colorBlendAttchState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttchState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			colorBlendAttchState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+			VkPipelineColorBlendStateCreateInfo colorBlendInfo = {};
+			colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+			colorBlendInfo.logicOpEnable = VK_FALSE;
+			colorBlendInfo.attachmentCount = 1;
+			colorBlendInfo.pAttachments = &colorBlendAttchState;
+
+			VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+			VkGraphicsPipelineCreateInfo pipelineInfo = {};
+			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+			pipelineInfo.stageCount = newPass.m_shaderStagesInfo.size();
+			pipelineInfo.pStages = newPass.m_shaderStagesInfo.data();
+			pipelineInfo.pVertexInputState = &vertexInputStateInfo;
+			pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
+			pipelineInfo.pViewportState = &viewportInfo;
+			pipelineInfo.pRasterizationState = &rasterInfo;
+			pipelineInfo.pMultisampleState = &multisamplingInfo;
+			pipelineInfo.pDepthStencilState = nullptr;
+			pipelineInfo.pColorBlendState = &colorBlendInfo;
+			pipelineInfo.renderPass = m_vlkSwapchainP->GetVkRenderPass();
+			pipelineInfo.subpass = 0;
+			pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+			pipelineInfo.basePipelineIndex = -1;
+			
+			VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+			dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+			dynamicStateInfo.dynamicStateCount = 2;
+			VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_LINE_WIDTH };
+			dynamicStateInfo.pDynamicStates = dynamicStates;
+			pipelineInfo.pDynamicState = &dynamicStateInfo;
+			
+			VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+			vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &newPass.m_vkPipelineLayout);
+
+			pipelineInfo.layout = newPass.m_vkPipelineLayout;
+
+			vkCreateGraphicsPipelines(device, nullptr, 1, &pipelineInfo, nullptr, &newPass.m_vkPipeline);
+
+		}
+
+		VlkRenderContext::VlkPass::~VlkPass() {
+
+			VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+			if (m_vkPipeline) {
+				vkDestroyPipeline(device, m_vkPipeline, nullptr);
+			}
+			if (m_vkPipelineLayout) {
+				vkDestroyPipelineLayout(device, m_vkPipelineLayout, nullptr);
+			}
+
 		}
 
 	}
