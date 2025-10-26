@@ -50,10 +50,14 @@ static VkDevice CreateVkDevice(VkPhysicalDevice physicalDevice, const uint32_t q
 	VkPhysicalDeviceFeatures features = {};
 	deviceInfo.pEnabledFeatures = &features;
 
-	const char *extensions = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-	deviceInfo.ppEnabledExtensionNames = &extensions;
+	std::vector<const char*> extensions = { 
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME ,
+		VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME,
+		VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
+	};
 
-	deviceInfo.enabledExtensionCount = 1;
+	deviceInfo.ppEnabledExtensionNames = extensions.data();
+	deviceInfo.enabledExtensionCount = extensions.size();
 
 	VkDevice vkDevice = VK_NULL_HANDLE;
 	vkCreateDevice(physicalDevice, &deviceInfo, nullptr, &vkDevice);
