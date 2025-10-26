@@ -15,14 +15,14 @@ namespace PixelMachine {
 		public:
 			VlkRenderContext(HWND windowHandle);
 			~VlkRenderContext();
-			void BeginPass(const std::string name) override {};
+			void BeginPass() override {};
 			void SetPrimitiveType(const int type) override {};
 			void SetLineWidth(const float width) override {};
 			void SetMultisampling(const int sampleCount) override {};
 			void SetDepthTesting(const bool enabled) override {};
 			void SetClearColor(const float rgb[3]) override {};
 			void SetViewport(const int xywh[4]) override {};
-			void RunPass(const std::string name) override {};
+			void RunPass(const int index) override {};
 			void PresentFrame() override {};
 			void EndPass() override {};
 			static VlkDevice *GetVlkDevice();
