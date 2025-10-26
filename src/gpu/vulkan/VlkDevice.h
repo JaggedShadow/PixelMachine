@@ -28,6 +28,7 @@ namespace PixelMachine {
 			uint32_t GetAdapterCount() const;
 			VkDevice GetHandle() const;
 			VkInstance GetVkInstance() const;
+			std::pair<VkQueue, uint32_t> GetActiveQueue() const { return m_vkGPQueue; };
 
 		private:
 			VkInstance m_vkInstance = VK_NULL_HANDLE;
