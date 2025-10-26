@@ -1,16 +1,51 @@
 #include <gpu/RenderContext.h>
 #include <Windows.h>
 
-namespace PXMGPU = PixelMachine::GPU;
+#include "Local.h"
 
-HWND CreateSystemWindow(const wchar_t *name , const int windowWidth, const int windowHeight) {
+using namespace PixelMachine::GPU;
+
+bool windowActive = true;
+
+static LRESULT WinProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+
+	switch (Msg)
+	{
+	case WM_CREATE:
+		break;
+
+	case WM_PAINT:
+		break;
+
+	case WM_SIZING:
+		break;
+
+	case WM_DESTROY:
+		break;
+
+	case WM_ENTERSIZEMOVE:
+		break;
+
+	case WM_EXITSIZEMOVE:
+		break;
+
+	case WM_CLOSE:
+		windowActive = false;
+		break;
+
+	default:
+		return DefWindowProcW(hWnd, Msg, wParam, lParam);
+	}
+}
+
+static HWND CreateSystemWindow(const wchar_t *name , const int windowWidth, const int windowHeight) {
 
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	WNDCLASSEXW wndClassExW = { 0u };
 	const wchar_t windowClassName[] = L"DefaultWindowClass";
 
 	wndClassExW.lpszClassName = windowClassName;
-	wndClassExW.lpfnWndProc = DefWindowProcW;
+	wndClassExW.lpfnWndProc = WinProc;
 	wndClassExW.hInstance = hInstance;
 	wndClassExW.hCursor = NULL;
 	wndClassExW.hIcon = NULL;
@@ -56,29 +91,28 @@ int main() {
 	HWND windowHandle = CreateSystemWindow(L"PixelMachine", 1280, 720);
 	ShowWindow(windowHandle, SW_SHOW);
 
-	PXMGPU::RenderContext::Initialize(windowHandle);
-	PXMGPU::RenderContext *pContext = PXMGPU::RenderContext::Get();
+	RenderContext::Initialize(windowHandle);
+	RenderContext *pContext = RenderContext::Get();
 
-	//pContext->BeginPass("TrianglePass");
-	//pContext->BindShader("Vertex Shader")
-	//pContext->BindShader("Fragment Shader")
-	//pContext->SetPrimitiveType("TRIANGLE_LIST")
-	//pContext->SetMultisampling(8)
-	//pContext->SetClearColor(0,0,0)
-	//pContext->EndPass()
+	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderType::VertexShader);
+	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderType::FragmentShader);
+	
+	pContext->BeginPass();
+	vertexShaderProgram->Bind();
+	fragShaderProgram->Bind();
+	pContext->EndPass();
 
-
-	while (true) {
+	while (windowActive) {
 		MSG msg = { 0 };
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		//pContext->Draw()
-		//pContext->PresentFrame();
 	}
 
-	PXMGPU::RenderContext::Destroy();
+	delete vertexShaderProgram;
+	delete fragShaderProgram;
+	RenderContext::Destroy();
 
 	return 0;
 }
