@@ -91,36 +91,8 @@ namespace PixelMachine {
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 
-			if (newPass.m_renderToScreen) {
-
-				VlkAdapter adapter = VlkRenderContext::GetVlkDevice()->GetActiveAdapter();
-				VkSurfaceCapabilitiesKHR surfaceCaps = adapter.GetSurfaceInfo(m_vkWinSurface);
-
-				viewport.x = 0.0f;
-				viewport.y = 0.0f;
-				viewport.width = static_cast<float>(surfaceCaps.currentExtent.width);
-				viewport.height = static_cast<float>(surfaceCaps.currentExtent.height);
-			}
-			else {
-				viewport.x = newPass.m_viewportRect[0];
-				viewport.y = newPass.m_viewportRect[1];
-				viewport.width = newPass.m_viewportRect[2];
-				viewport.height = newPass.m_viewportRect[3];
-			}
-
-			
-			VkRect2D scissorRect = {}; // Render full viewport 
-			scissorRect.offset = { 0,0 };
-			scissorRect.extent.width = viewport.width;
-			scissorRect.extent.height = viewport.height;
-			
-
 			VkPipelineViewportStateCreateInfo viewportInfo = {};
 			viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-			viewportInfo.viewportCount = 1;
-			viewportInfo.pViewports = &viewport;
-			viewportInfo.scissorCount = 1;
-			viewportInfo.pScissors = &scissorRect;
 
 			VkPipelineRasterizationStateCreateInfo rasterInfo = {};
 			rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -184,8 +156,12 @@ namespace PixelMachine {
 			
 			VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
 			dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-			dynamicStateInfo.dynamicStateCount = 2;
-			VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_LINE_WIDTH };
+			dynamicStateInfo.dynamicStateCount = 3;
+			VkDynamicState dynamicStates[3] = { 
+				VK_DYNAMIC_STATE_LINE_WIDTH,
+				VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
+				VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT
+			};
 			dynamicStateInfo.pDynamicStates = dynamicStates;
 			pipelineInfo.pDynamicState = &dynamicStateInfo;
 			
