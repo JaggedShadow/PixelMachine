@@ -48,11 +48,63 @@ namespace PixelMachine {
 
 			m_vlkSwapchainP = new VlkSwapchain(m_vkWinSurface, m_vkWinSurfaceFormat, VK_PRESENT_MODE_FIFO_KHR);
 
+			VkDevice device = sm_vlkDeviceP->GetHandle();
+
+			VkCommandPoolCreateInfo commandPoolInfo = {};
+			commandPoolInfo.queueFamilyIndex = sm_vlkDeviceP->GetActiveQueue().second;
+			commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+			vkCreateCommandPool(device, &commandPoolInfo, nullptr, &m_vkCommandPool);
+
+			VkCommandBufferAllocateInfo commandBufferInfo = {};
+			commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			commandBufferInfo.commandBufferCount = 1;
+			commandBufferInfo.commandPool = m_vkCommandPool;
+
+			vkAllocateCommandBuffers(device, &commandBufferInfo, &m_vkCommandBuffer);
+
+			VkSemaphoreCreateInfo semaphoreInfo = {};
+			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+			m_renderDone.resize(m_vlkSwapchainP->GetImagesCount());
+
+			for (auto &sem : m_renderDone) {
+				VkSemaphore semaphore = VK_NULL_HANDLE;
+				vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
+				sem = semaphore;
+			}
+
+			VkFenceCreateInfo fenceInfo = {};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+			vkCreateFence(device, &fenceInfo, nullptr, &m_vkCmdCompletedFence);
+
 		}
 
 		VlkRenderContext::~VlkRenderContext() {
 
 			m_vlkPasses.clear();
+
+			VkDevice device = sm_vlkDeviceP->GetHandle();
+
+			if (m_vkCmdCompletedFence) {
+				vkDestroyFence(device, m_vkCmdCompletedFence, nullptr);
+			}
+
+			for (auto &sem : m_renderDone) {
+				vkDestroySemaphore(device, sem, nullptr);
+			}
+
+			if (m_vkCommandBuffer) {
+				vkFreeCommandBuffers(device, m_vkCommandPool, 1, &m_vkCommandBuffer);
+			}
+
+			if (m_vkCommandBuffer) {
+				vkDestroyCommandPool(device, m_vkCommandPool, nullptr);
+			}
 
 			if (m_vlkSwapchainP) {
 				delete m_vlkSwapchainP;
@@ -66,6 +118,88 @@ namespace PixelMachine {
 				delete sm_vlkDeviceP;
 				sm_vlkDeviceP = nullptr;
 			}
+		}
+
+		void VlkRenderContext::RunPass(const int index) {
+
+			vkWaitForFences(sm_vlkDeviceP->GetHandle(), 1u, &m_vkCmdCompletedFence, VK_TRUE, UINT64_MAX);
+			vkResetFences(sm_vlkDeviceP->GetHandle(), 1u, &m_vkCmdCompletedFence);
+			vkResetCommandBuffer(m_vkCommandBuffer, 0);
+
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = 0;
+			beginInfo.pInheritanceInfo = nullptr;
+
+			vkBeginCommandBuffer(m_vkCommandBuffer, &beginInfo);
+
+			VlkPass &pass = m_vlkPasses.at(index);
+			VkClearValue clearColor = { pass.m_clearColor[0], pass.m_clearColor[1], pass.m_clearColor[2], 1.0f };
+			VkRect2D renderArea = {}; // Viewport = Render Area = Scissor Rectangle
+
+			VkRenderPassBeginInfo renderPassBeginInfo = {};
+
+			if (pass.m_renderToScreen) {
+				m_frameIndex = m_vlkSwapchainP->GetImage(&renderPassBeginInfo.framebuffer);
+
+				VlkAdapter activeAdapter = sm_vlkDeviceP->GetActiveAdapter();
+				VkSurfaceCapabilitiesKHR surfaceCaps = activeAdapter.GetSurfaceInfo(m_vkWinSurface);
+				renderArea.extent.width = surfaceCaps.currentExtent.width;
+				renderArea.extent.height = surfaceCaps.currentExtent.height;
+				renderArea.offset = { 0 };
+			}
+			//else - Set render area according to a target texture extents
+
+			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassBeginInfo.renderPass = m_vlkSwapchainP->GetVkRenderPass();
+			renderPassBeginInfo.renderArea = renderArea;
+			renderPassBeginInfo.clearValueCount = 1u;
+			renderPassBeginInfo.pClearValues = &clearColor;
+
+
+			vkCmdBeginRenderPass(m_vkCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.m_vkPipeline);
+
+			VkViewport viewport = {};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = renderArea.extent.width;
+			viewport.height = renderArea.extent.height;
+
+			vkCmdSetViewportWithCount(m_vkCommandBuffer, 1u, &viewport);
+			vkCmdSetScissorWithCount(m_vkCommandBuffer, 1u, &renderArea);
+			vkCmdDraw(m_vkCommandBuffer, 3u, 1u, 0u, 0u);
+			vkCmdEndRenderPass(m_vkCommandBuffer);
+			vkEndCommandBuffer(m_vkCommandBuffer);
+
+			VkSubmitInfo submitInfo{};
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+			VkSemaphore imageAvailable = m_vlkSwapchainP->GetImageAvailableSemaphore();
+			VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			submitInfo.waitSemaphoreCount = 1u;
+			submitInfo.pWaitSemaphores = &imageAvailable;
+			submitInfo.pWaitDstStageMask = waitStages;
+			submitInfo.commandBufferCount = 1u;
+			submitInfo.pCommandBuffers = &m_vkCommandBuffer;
+			submitInfo.signalSemaphoreCount = 1u;
+			submitInfo.pSignalSemaphores = &m_renderDone[m_frameIndex];
+
+			vkQueueSubmit(sm_vlkDeviceP->GetActiveQueue().first, 1, &submitInfo, m_vkCmdCompletedFence);
+		}
+
+		void VlkRenderContext::PresentFrame() {
+
+			VkPresentInfoKHR presentInfo{};
+			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			presentInfo.waitSemaphoreCount = 1u;
+			presentInfo.pWaitSemaphores = &m_renderDone[m_frameIndex];
+			presentInfo.swapchainCount = 1u;
+			VkSwapchainKHR swapchain = m_vlkSwapchainP->GetHandle();
+			presentInfo.pSwapchains = &swapchain;
+			presentInfo.pImageIndices = &m_frameIndex;
+
+			vkQueuePresentKHR(sm_vlkDeviceP->GetActiveQueue().first, &presentInfo);
 		}
 
 		void VlkRenderContext::EndPass() {
@@ -90,7 +224,7 @@ namespace PixelMachine {
 			VkViewport viewport = {};
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
-
+			
 			VkPipelineViewportStateCreateInfo viewportInfo = {};
 			viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 
@@ -178,6 +312,8 @@ namespace PixelMachine {
 		VlkRenderContext::VlkPass::~VlkPass() {
 
 			VkDevice device = VlkRenderContext::GetVlkDevice()->GetHandle();
+
+			vkDeviceWaitIdle(device);
 
 			if (m_vkPipeline) {
 				vkDestroyPipeline(device, m_vkPipeline, nullptr);

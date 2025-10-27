@@ -23,8 +23,8 @@ namespace PixelMachine {
 			void SetDepthTesting(const bool enabled) override {};
 			void SetClearColor(const float rgb[3]) override {};
 			void SetViewport(const int xywh[4]) override {};
-			void RunPass(const int index) override {};
-			void PresentFrame() override {};
+			void RunPass(const int index) override;
+			void PresentFrame() override;
 			void EndPass() override;
 			static VlkDevice *GetVlkDevice();
 
@@ -52,6 +52,13 @@ namespace PixelMachine {
 			VkSurfaceFormatKHR m_vkWinSurfaceFormat = {};
 			VlkSwapchain *m_vlkSwapchainP = nullptr;
 			std::vector<VlkPass> m_vlkPasses;
+			VkCommandPool m_vkCommandPool = VK_NULL_HANDLE;
+			VkCommandBuffer m_vkCommandBuffer = VK_NULL_HANDLE;
+			VkFence m_vkCmdCompletedFence = VK_NULL_HANDLE;
+
+			uint32_t m_frameIndex = 0;
+			std::vector<VkSemaphore> m_renderDone;
+
 		};
 	}
 }

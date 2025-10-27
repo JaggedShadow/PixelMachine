@@ -108,6 +108,8 @@ int main() {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		pContext->RunPass(0);
+		pContext->PresentFrame();
 	}
 
 	delete vertexShaderProgram;
