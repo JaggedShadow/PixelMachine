@@ -16,6 +16,7 @@ namespace PixelMachine {
 			uint32_t GetImage(VkFramebuffer *outFramebuffer) const;
 			VkSemaphore GetImageAvailableSemaphore() const { return m_vkImageAvailableSemaphore; }
 			VkSwapchainKHR GetHandle() const { return m_vkSwapchain; }
+			uint32_t GetImagesCount() const { return m_framebuffers.size(); }
 
 		private:
 			VkSurfaceFormatKHR m_vkSurfaceFormat = {};
