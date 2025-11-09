@@ -1,4 +1,6 @@
 #include <gpu/RenderContext.h>
+#include <gpu/ShaderProgram.h>
+
 #include <Windows.h>
 
 #include "Local.h"
@@ -94,8 +96,8 @@ int main() {
 	RenderContext::Initialize(windowHandle);
 	RenderContext *pContext = RenderContext::Get();
 
-	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderType::VertexShader);
-	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderType::FragmentShader);
+	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderProgramType::VertexShader);
+	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderProgramType::FragmentShader);
 	
 	pContext->BeginPass();
 	vertexShaderProgram->Bind();

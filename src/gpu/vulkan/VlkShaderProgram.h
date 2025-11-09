@@ -1,6 +1,8 @@
 #ifndef VLK_SHADER_PROGRAM_H_
 #define VLK_SHADER_PROGRAM_H_
 
+#include <ShaderProgram.h>
+
 #include <vulkan/VlkRenderContext.h>
 #include <vulkan/VlkDevice.h>
 #include <vulkan/vulkan.h>
@@ -12,7 +14,7 @@ namespace PixelMachine {
 
 		class VlkShaderProgram : public ShaderProgram {
 		public:
-			VlkShaderProgram(const std::string name, const std::string compiledShaderPath, ShaderType type) : ShaderProgram(name, type, 0) {
+			VlkShaderProgram(const std::string name, const std::string compiledShaderPath, ShaderProgramType type) : ShaderProgram(name, type, 0) {
 				
 				std::ifstream file(compiledShaderPath, std::ios::ate | std::ios::binary);
 

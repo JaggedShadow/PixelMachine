@@ -337,13 +337,13 @@ namespace PixelMachine {
 
 			switch (shaderProgram->GetType())
 			{
-			case ShaderType::VertexShader:
+			case ShaderProgramType::VertexShader:
 				shaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 				break;
-			case ShaderType::FragmentShader:
+			case ShaderProgramType::FragmentShader:
 				shaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 				break;
-			case ShaderType::ComputeShader:
+			case ShaderProgramType::ComputeShader:
 				shaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 				break;
 			default:

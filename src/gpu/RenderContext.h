@@ -6,25 +6,6 @@
 namespace PixelMachine {
 	namespace GPU {
 
-		enum ShaderType {
-			VertexShader,
-			FragmentShader,
-			ComputeShader
-		};
-
-		class ShaderProgram {
-		public:
-			static ShaderProgram *CreateFromCompiled(const std::string name, const std::string compiledShaderPath, ShaderType type);
-			ShaderType GetType() const { return m_type; }
-			virtual void Bind() const = 0;
-			virtual ~ShaderProgram() {};
-		protected:
-			ShaderProgram(std::string name, ShaderType shaderType, size_t size) : m_name(name), m_type(shaderType), m_size(size) {};
-			std::string m_name;
-			ShaderType m_type;
-			size_t m_size;
-		};
-
 		class RenderContext {
 		public:
 			static void Initialize(void *windowHandle);

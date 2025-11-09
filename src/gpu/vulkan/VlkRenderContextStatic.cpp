@@ -11,7 +11,7 @@ namespace PixelMachine {
 		VlkRenderContext *s_vlkRenderContextP;
 		VlkDevice *VlkRenderContext::sm_vlkDeviceP = nullptr;
 
-		ShaderProgram *ShaderProgram::CreateFromCompiled(const std::string name, const std::string compiledShaderPath, ShaderType type) {
+		ShaderProgram *ShaderProgram::CreateFromCompiled(const std::string name, const std::string compiledShaderPath, ShaderProgramType type) {
 			return new VlkShaderProgram(name, compiledShaderPath, type);
 		}
 
