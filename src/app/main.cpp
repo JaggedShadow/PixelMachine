@@ -98,9 +98,23 @@ int main() {
 
 	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderProgramType::VertexShader);
 	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderProgramType::FragmentShader);
-	
+
+	/*
+	const float vertexData[] = {
+	 0.0,-1.0, 0.0, 0.0,      1.0, 0.5, 0.5, 1.0,
+	 1.0, 1.0, 0.0, 0.0,      0.1, 1.0, 0.4, 1.0,
+	-1.0, 1.0, 0.0, 0.0,      0.0, 0.0, 1.0, 1.0 };
+
+	ShaderBuffer *vertexBuffer = ShaderBuffer::Create(ShaderBufferLayout({
+		{ ShaderDataType::float4, "position" },
+		{ ShaderDataType::float4, "color" }}),
+		vertexData,
+		ShaderBufferType::VertexBuffer);
+	*/
+
 	pContext->BeginPass();
 	vertexShaderProgram->Bind();
+	//vertexBuffer->Bind();
 	fragShaderProgram->Bind();
 	pContext->EndPass();
 
