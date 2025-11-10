@@ -42,7 +42,8 @@ namespace PixelMachine {
 
 		class ShaderBufferLayout {
 		public:
-			ShaderBufferLayout(std::initializer_list<ShaderBufferAttribute> bufferAttributes) {
+			ShaderBufferLayout(std::initializer_list<ShaderBufferAttribute> bufferAttributes)
+				: m_attributes(bufferAttributes.begin(), bufferAttributes.end()) {
 				uint32_t offset = 0;
 				for (auto &attribute : m_attributes) {
 					attribute.m_offset = offset;
@@ -61,16 +62,23 @@ namespace PixelMachine {
 
 		class ShaderBuffer {
 		public:
-			static ShaderBuffer *Create(const ShaderBufferLayout dataLayout, const void *data, const ShaderBufferType type);
+			static ShaderBuffer *Create(
+				const ShaderBufferType type,
+				const ShaderBufferLayout dataLayout,
+				const uint32_t elementCount);
+			ShaderBufferType GetType() const { return m_type; }
+			ShaderBufferLayout GetLayout() const { return m_dataLayout; }
 			/// <summary>
 			/// Binds a buffer to the pipeline
 			/// </summary>
 			/// <param name="stage"> Pipeline stage the buffer is about to be bound
-			/// - ignored if buffer type is other than "Uniform" </param>
+			/// - used only if buffer type is "ShaderBufferType::Uniform" </param>
 			virtual void Bind(const ShaderProgramType stage = ShaderProgramType::Undefined) const = 0;
+			virtual void SetData(const void *data) = 0;
+			virtual uint32_t GetSize() const = 0;
+			virtual ~ShaderBuffer() {};
 		protected:
 			ShaderBuffer(const ShaderBufferLayout dataLayout, const ShaderBufferType type) : m_dataLayout(dataLayout), m_type(type) {};
-			virtual ~ShaderBuffer() {};
 			ShaderBufferType m_type;
 			ShaderBufferLayout m_dataLayout;
 		};
