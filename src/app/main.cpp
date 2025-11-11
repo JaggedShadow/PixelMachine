@@ -1,5 +1,6 @@
 #include <gpu/RenderContext.h>
 #include <gpu/ShaderProgram.h>
+#include <gpu/ShaderBuffer.h>
 
 #include <Windows.h>
 
@@ -99,22 +100,23 @@ int main() {
 	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderProgramType::VertexShader);
 	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderProgramType::FragmentShader);
 
-	/*
 	const float vertexData[] = {
 	 0.0,-1.0, 0.0, 0.0,      1.0, 0.5, 0.5, 1.0,
 	 1.0, 1.0, 0.0, 0.0,      0.1, 1.0, 0.4, 1.0,
 	-1.0, 1.0, 0.0, 0.0,      0.0, 0.0, 1.0, 1.0 };
 
-	ShaderBuffer *vertexBuffer = ShaderBuffer::Create(ShaderBufferLayout({
+	ShaderBuffer *vertexBuffer = ShaderBuffer::Create(
+		ShaderBufferType::VertexBuffer,
+		ShaderBufferLayout({
 		{ ShaderDataType::float4, "position" },
-		{ ShaderDataType::float4, "color" }}),
-		vertexData,
-		ShaderBufferType::VertexBuffer);
-	*/
+		{ ShaderDataType::float4, "color" } }),
+		3 );
+
+	vertexBuffer->SetData(vertexData);
 
 	pContext->BeginPass();
 	vertexShaderProgram->Bind();
-	//vertexBuffer->Bind();
+	vertexBuffer->Bind();
 	fragShaderProgram->Bind();
 	pContext->EndPass();
 
@@ -128,6 +130,7 @@ int main() {
 		pContext->PresentFrame();
 	}
 
+	delete vertexBuffer;
 	delete vertexShaderProgram;
 	delete fragShaderProgram;
 	RenderContext::Destroy();
