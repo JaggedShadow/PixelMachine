@@ -40,7 +40,7 @@ namespace PixelMachine {
 				const uint32_t elementCount);
 			~VlkStagingBuffer();
 			void SetData(const void *data) override;
-			VkBuffer GetHandle() const { return m_vkGpuBuffer; };
+			VkBuffer GetHandle() const override { return m_vkGpuBuffer; };
 		private:
 			VkBuffer m_vkGpuBuffer = VK_NULL_HANDLE;
 			VkDeviceMemory m_vkGpuMemory = VK_NULL_HANDLE;
