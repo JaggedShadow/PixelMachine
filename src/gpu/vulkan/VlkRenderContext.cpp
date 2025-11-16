@@ -2,6 +2,7 @@
 #include <vulkan/VlkDevice.h>
 #include <vulkan/VlkSwapchain.h>
 #include <vulkan/VlkShaderProgram.h>
+#include <vulkan/VlkBuffer.h>
 
 #include <stdexcept>
 
@@ -159,6 +160,9 @@ namespace PixelMachine {
 
 			vkCmdBeginRenderPass(m_vkCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.m_vkPipeline);
+			VkDeviceSize offsets[] = { 0 };
+			VkBuffer vertexBuffer = pass.m_vbo->GetHandle();
+			vkCmdBindVertexBuffers(m_vkCommandBuffer, 0, 1, &vertexBuffer , offsets);
 
 			VkViewport viewport = {};
 			viewport.x = 0.0f;
@@ -202,6 +206,20 @@ namespace PixelMachine {
 			vkQueuePresentKHR(sm_vlkDeviceP->GetActiveQueue().first, &presentInfo);
 		}
 
+		VkFormat GetVkFormat(BufferDataType shaderDataType) {
+			switch (shaderDataType)
+			{
+			case BufferDataType::int3:		return VK_FORMAT_R32G32B32_SINT;
+			case BufferDataType::int4:		return VK_FORMAT_R32G32B32A32_SINT;
+			case BufferDataType::uint3:		return VK_FORMAT_R32G32B32_UINT;
+			case BufferDataType::uint4:		return VK_FORMAT_R32G32B32A32_UINT;
+			case BufferDataType::float3:	return VK_FORMAT_R32G32B32_SFLOAT;
+			case BufferDataType::float4:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+			default: break;
+			}
+			return VK_FORMAT_UNDEFINED;
+		}
+
 		void VlkRenderContext::EndPass() {
 
 			if (!m_vlkPasses.size())
@@ -211,10 +229,27 @@ namespace PixelMachine {
 
 			VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
 			vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-			vertexInputStateInfo.vertexBindingDescriptionCount = 0;
-			vertexInputStateInfo.pVertexBindingDescriptions = nullptr;
-			vertexInputStateInfo.vertexAttributeDescriptionCount = 0;
-			vertexInputStateInfo.pVertexAttributeDescriptions = nullptr;
+			vertexInputStateInfo.vertexBindingDescriptionCount = 1;
+
+			VkVertexInputBindingDescription bindingDesc = {};
+			bindingDesc.binding = 0;
+			bindingDesc.stride = newPass.m_vbo->GetLayout().GetSize();
+			bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+			vertexInputStateInfo.pVertexBindingDescriptions = &bindingDesc;
+			vertexInputStateInfo.vertexAttributeDescriptionCount = newPass.m_vbo->GetLayout().GetAttributeCount();
+
+			std::vector<VkVertexInputAttributeDescription> attributeDescriptions(newPass.m_vbo->GetLayout().GetAttributeCount());
+
+			for (uint32_t i = 0; i < newPass.m_vbo->GetLayout().GetAttributeCount(); i++) {
+				BufferAttribute attribute = newPass.m_vbo->GetLayout().GetAttribute(i);
+				attributeDescriptions[i].binding = 0;
+				attributeDescriptions[i].location = i;
+				attributeDescriptions[i].offset = attribute.m_offset;
+				attributeDescriptions[i].format = GetVkFormat(attribute.m_shaderDataType);
+			}
+	 
+			vertexInputStateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 	
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
 			inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -353,6 +388,24 @@ namespace PixelMachine {
 			VlkPass &newPass = *m_vlkPasses.rbegin();
 			newPass.m_shaderStagesInfo.push_back(shaderInfo);
 
+		}
+
+		void VlkRenderContext::BindBuffer(const VlkBuffer *buffer) {
+
+			VlkPass &newPass = *m_vlkPasses.rbegin();
+
+			switch (buffer->GetType())
+			{
+			case VertexBuffer:
+				newPass.m_vbo = buffer;
+				break;
+			case IndexBuffer:
+				break;
+			case UniformBuffer:
+				break;
+			default:
+				break;
+			}
 		}
 	}
 }

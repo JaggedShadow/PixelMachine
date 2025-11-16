@@ -9,6 +9,7 @@
 
 namespace PixelMachine {
 	namespace GPU {	
+		class VlkBuffer;
 		class VlkShaderProgram;
 		class VlkDevice;
 		class VlkSwapchain;
@@ -29,12 +30,14 @@ namespace PixelMachine {
 			static VlkDevice *GetVlkDevice();
 
 			void BindShaderProgram(const VlkShaderProgram *shaderProgram);
+			void BindBuffer(const VlkBuffer *buffer);
 
 		private:
 
 			struct VlkPass {
 				VkPipeline m_vkPipeline = VK_NULL_HANDLE;
 				VkPipelineLayout m_vkPipelineLayout = VK_NULL_HANDLE;
+				const VlkBuffer *m_vbo = nullptr;
 				std::vector<VkPipelineShaderStageCreateInfo> m_shaderStagesInfo;
 				bool m_renderToScreen = true;
 				bool m_depthTest = false;

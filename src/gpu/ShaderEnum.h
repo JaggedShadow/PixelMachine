@@ -11,25 +11,6 @@ namespace PixelMachine {
 			ComputeShader
 		};
 
-		enum ShaderBufferType {
-			VertexBuffer,
-			IndexBuffer,
-			UniformBuffer
-		};
-
-		enum ShaderDataType {
-			int2,
-			int3,
-			int4,
-			uint2,
-			uint3,
-			uint4,
-			float2,
-			float3,
-			float4,
-			matrix3,
-			matrix4
-		};
 	}
 }
 
