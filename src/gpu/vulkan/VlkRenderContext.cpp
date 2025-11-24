@@ -209,10 +209,16 @@ namespace PixelMachine {
 		VkFormat GetVkFormat(BufferDataType shaderDataType) {
 			switch (shaderDataType)
 			{
+			case BufferDataType::int1:		return VK_FORMAT_R32_SINT;
+			case BufferDataType::int2:		return VK_FORMAT_R32G32_SINT;
 			case BufferDataType::int3:		return VK_FORMAT_R32G32B32_SINT;
 			case BufferDataType::int4:		return VK_FORMAT_R32G32B32A32_SINT;
+			case BufferDataType::uint1:		return VK_FORMAT_R32_UINT;
+			case BufferDataType::uint2:		return VK_FORMAT_R32G32_UINT;
 			case BufferDataType::uint3:		return VK_FORMAT_R32G32B32_UINT;
 			case BufferDataType::uint4:		return VK_FORMAT_R32G32B32A32_UINT;
+			case BufferDataType::float1:	return VK_FORMAT_R32_SFLOAT;
+			case BufferDataType::float2:	return VK_FORMAT_R32G32_SFLOAT;
 			case BufferDataType::float3:	return VK_FORMAT_R32G32B32_SFLOAT;
 			case BufferDataType::float4:	return VK_FORMAT_R32G32B32A32_SFLOAT;
 			default: break;

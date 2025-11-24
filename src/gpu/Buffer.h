@@ -16,12 +16,15 @@ namespace PixelMachine {
 		};
 
 		enum BufferDataType {
+			int1,
 			int2,
 			int3,
 			int4,
+			uint1,
 			uint2,
 			uint3,
 			uint4,
+			float1,
 			float2,
 			float3,
 			float4,
@@ -46,10 +49,16 @@ namespace PixelMachine {
 			static uint32_t GetSize(BufferDataType dataType) {
 				switch (dataType)
 				{
+				case BufferDataType::int1:		return 4;
+				case BufferDataType::int2:		return 4 * 2;
 				case BufferDataType::int3:		return 4 * 3;
 				case BufferDataType::int4:		return 4 * 4;
+				case BufferDataType::uint1:		return 4;
+				case BufferDataType::uint2:		return 4 * 2;
 				case BufferDataType::uint3:		return 4 * 3;
 				case BufferDataType::uint4:		return 4 * 4;
+				case BufferDataType::float1:	return 4;
+				case BufferDataType::float2:	return 4 * 2;
 				case BufferDataType::float3:	return 4 * 3;
 				case BufferDataType::float4:	return 4 * 4;
 				case BufferDataType::matrix3:	return 4 * 3 * 3;
