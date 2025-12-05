@@ -100,7 +100,7 @@ int main() {
 	ShaderProgram *vertexShaderProgram = ShaderProgram::CreateFromCompiled("VS", VS_PATH , ShaderProgramType::VertexShader);
 	ShaderProgram *fragShaderProgram = ShaderProgram::CreateFromCompiled("FS", FS_PATH, ShaderProgramType::FragmentShader);
 
-	Buffer *vertexBuffer = Buffer::Create(
+	Buffer *vertexBuffer3D = Buffer::Create(
 		BufferType::VertexBuffer,
 		ShaderProgramType::VertexShader,
 		BufferLayout({
@@ -108,7 +108,15 @@ int main() {
 		{ BufferDataType::float3, "color" } }),
 		3 );
 
-	const float vertexData[] = {
+	Buffer *vertexBuffer2D = Buffer::Create(
+		BufferType::VertexBuffer,
+		ShaderProgramType::VertexShader,
+		BufferLayout({
+		{ BufferDataType::float2, "position" },
+		{ BufferDataType::float3, "color" } }),
+		3);
+
+	const float vertexData3D[] = {
 		0.0,-0.5, 0.0, // pos
 		1.0, 0.5, 0.5, // color
 
@@ -119,11 +127,24 @@ int main() {
 		0.0, 0.0, 1.0  // color
 	};
 
-	vertexBuffer->SetData(vertexData);
+	const float vertexData2D[] = {
+	   -0.5,-0.5,	   // pos
+		1.0, 0.1, 0.1, // color
+
+		0.5,-0.5,      // pos
+		0.1, 1.0, 0.1, // color
+
+		0.0, 0.5,      // pos
+		0.1, 0.1, 1.0  // color
+	};
+
+	vertexBuffer3D->SetData(vertexData3D);
+	vertexBuffer2D->SetData(vertexData2D);
 
 	pContext->BeginPass();
 	vertexShaderProgram->Bind();
-	vertexBuffer->Bind();
+	vertexBuffer3D->Bind();
+	vertexBuffer2D->Bind();
 	fragShaderProgram->Bind();
 	pContext->EndPass();
 
@@ -137,7 +158,8 @@ int main() {
 		pContext->PresentFrame();
 	}
 
-	delete vertexBuffer;
+	delete vertexBuffer2D;
+	delete vertexBuffer3D;
 	delete vertexShaderProgram;
 	delete fragShaderProgram;
 	RenderContext::Destroy();

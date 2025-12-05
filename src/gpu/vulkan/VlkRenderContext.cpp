@@ -160,9 +160,19 @@ namespace PixelMachine {
 
 			vkCmdBeginRenderPass(m_vkCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.m_vkPipeline);
-			VkDeviceSize offsets[] = { 0 };
-			VkBuffer vertexBuffer = pass.m_vbo->GetHandle();
-			vkCmdBindVertexBuffers(m_vkCommandBuffer, 0, 1, &vertexBuffer , offsets);
+
+			std::vector<VkBuffer> vbs;
+
+			for (auto buffer : pass.m_buffers) {
+				if (buffer->GetType() == BufferType::VertexBuffer) {
+					vbs.push_back(buffer->GetHandle());
+				}
+			}
+
+			if (vbs.size()) {
+				std::vector<VkDeviceSize> offsets(vbs.size());
+				vkCmdBindVertexBuffers(m_vkCommandBuffer, 0, vbs.size(), vbs.data(), offsets.data());
+			}
 
 			VkViewport viewport = {};
 			viewport.x = 0.0f;
@@ -233,29 +243,44 @@ namespace PixelMachine {
 
 			VlkPass &newPass = *m_vlkPasses.rbegin();
 
+			std::vector<const VlkBuffer*> vbos;
+
+			for (auto buffer : newPass.m_buffers) {
+				if (buffer->GetType() == BufferType::VertexBuffer) {
+					vbos.push_back(buffer);
+				}
+			}
+
+			std::vector<VkVertexInputBindingDescription> vtxBindings(vbos.size());
+			std::vector<VkVertexInputAttributeDescription> vtxAttributeDescs;
+			uint32_t location = 0;
+
+			for (uint32_t i = 0; i < vtxBindings.size(); i++) {
+
+				vtxBindings[i].binding = i;
+				vtxBindings[i].stride = vbos[i]->GetLayout().GetSize();
+				vtxBindings[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+				for (uint32_t j = 0; j < vbos[i]->GetLayout().GetAttributeCount(); j++) {
+
+					VkVertexInputAttributeDescription vtxAttributeDesc = {};
+					BufferAttribute attribute = vbos[i]->GetLayout().GetAttribute(j);
+					vtxAttributeDesc.binding = i;
+					vtxAttributeDesc.location = location;
+					vtxAttributeDesc.offset = attribute.m_offset;
+					vtxAttributeDesc.format = GetVkFormat(attribute.m_shaderDataType);
+					vtxAttributeDescs.push_back(vtxAttributeDesc);
+					location++;
+				}
+
+			}
+
 			VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
 			vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-			vertexInputStateInfo.vertexBindingDescriptionCount = 1;
-
-			VkVertexInputBindingDescription bindingDesc = {};
-			bindingDesc.binding = 0;
-			bindingDesc.stride = newPass.m_vbo->GetLayout().GetSize();
-			bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			vertexInputStateInfo.pVertexBindingDescriptions = &bindingDesc;
-			vertexInputStateInfo.vertexAttributeDescriptionCount = newPass.m_vbo->GetLayout().GetAttributeCount();
-
-			std::vector<VkVertexInputAttributeDescription> attributeDescriptions(newPass.m_vbo->GetLayout().GetAttributeCount());
-
-			for (uint32_t i = 0; i < newPass.m_vbo->GetLayout().GetAttributeCount(); i++) {
-				BufferAttribute attribute = newPass.m_vbo->GetLayout().GetAttribute(i);
-				attributeDescriptions[i].binding = 0;
-				attributeDescriptions[i].location = i;
-				attributeDescriptions[i].offset = attribute.m_offset;
-				attributeDescriptions[i].format = GetVkFormat(attribute.m_shaderDataType);
-			}
-	 
-			vertexInputStateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+			vertexInputStateInfo.vertexBindingDescriptionCount = vtxBindings.size();
+			vertexInputStateInfo.pVertexBindingDescriptions = vtxBindings.data();
+			vertexInputStateInfo.vertexAttributeDescriptionCount = vtxAttributeDescs.size();
+			vertexInputStateInfo.pVertexAttributeDescriptions = vtxAttributeDescs.data();
 	
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
 			inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -397,21 +422,8 @@ namespace PixelMachine {
 		}
 
 		void VlkRenderContext::BindBuffer(const VlkBuffer *buffer) {
-
 			VlkPass &newPass = *m_vlkPasses.rbegin();
-
-			switch (buffer->GetType())
-			{
-			case VertexBuffer:
-				newPass.m_vbo = buffer;
-				break;
-			case IndexBuffer:
-				break;
-			case UniformBuffer:
-				break;
-			default:
-				break;
-			}
+			newPass.m_buffers.push_back(buffer);
 		}
 	}
 }
